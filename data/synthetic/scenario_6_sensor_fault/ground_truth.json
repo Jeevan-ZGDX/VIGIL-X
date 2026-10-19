@@ -1,0 +1,62 @@
+[
+  {
+    "frame_id": 0,
+    "timestamp_sec": 100.0,
+    "thermal_fault": false,
+    "expected_state": "NORMAL"
+  },
+  {
+    "frame_id": 1,
+    "timestamp_sec": 100.1,
+    "thermal_fault": false,
+    "expected_state": "NORMAL"
+  },
+  {
+    "frame_id": 2,
+    "timestamp_sec": 100.2,
+    "thermal_fault": false,
+    "expected_state": "NORMAL"
+  },
+  {
+    "frame_id": 3,
+    "timestamp_sec": 100.3,
+    "thermal_fault": false,
+    "expected_state": "NORMAL"
+  },
+  {
+    "frame_id": 4,
+    "timestamp_sec": 100.4,
+    "thermal_fault": true,
+    "expected_state": "DEGRADED"
+  },
+  {
+    "frame_id": 5,
+    "timestamp_sec": 100.5,
+    "thermal_fault": true,
+    "expected_state": "DEGRADED"
+  },
+  {
+    "frame_id": 6,
+    "timestamp_sec": 100.6,
+    "thermal_fault": true,
+    "expected_state": "DEGRADED"
+  },
+  {
+    "frame_id": 7,
+    "timestamp_sec": 100.7,
+    "thermal_fault": true,
+    "expected_state": "DEGRADED"
+  },
+  {
+    "frame_id": 8,
+    "timestamp_sec": 100.8,
+    "thermal_fault": false,
+    "expected_state": "NORMAL"
+  },
+  {
+    "frame_id": 9,
+    "timestamp_sec": 100.9,
+    "thermal_fault": false,
+    "expected_state": "NORMAL"
+  }
+]

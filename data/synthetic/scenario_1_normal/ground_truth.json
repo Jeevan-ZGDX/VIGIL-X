@@ -1,0 +1,317 @@
+[
+  {
+    "frame_id": 0,
+    "timestamp_sec": 100.0,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          220,
+          336,
+          310
+        ],
+        "distance_m": 12.0
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 1,
+    "timestamp_sec": 100.1,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          228,
+          338,
+          325
+        ],
+        "distance_m": 11.4
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 2,
+    "timestamp_sec": 100.2,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          236,
+          341,
+          340
+        ],
+        "distance_m": 10.8
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 3,
+    "timestamp_sec": 100.3,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          244,
+          344,
+          355
+        ],
+        "distance_m": 10.2
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 4,
+    "timestamp_sec": 100.4,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          252,
+          347,
+          370
+        ],
+        "distance_m": 9.6
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 5,
+    "timestamp_sec": 100.5,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          260,
+          350,
+          385
+        ],
+        "distance_m": 9.0
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 6,
+    "timestamp_sec": 100.6,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          268,
+          352,
+          400
+        ],
+        "distance_m": 8.4
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 7,
+    "timestamp_sec": 100.7,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          276,
+          355,
+          415
+        ],
+        "distance_m": 7.8
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 8,
+    "timestamp_sec": 100.8,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          284,
+          358,
+          430
+        ],
+        "distance_m": 7.2
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 9,
+    "timestamp_sec": 100.9,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          292,
+          361,
+          445
+        ],
+        "distance_m": 6.6
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 10,
+    "timestamp_sec": 101.0,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          300,
+          364,
+          460
+        ],
+        "distance_m": 6.0
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 11,
+    "timestamp_sec": 101.1,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          308,
+          366,
+          475
+        ],
+        "distance_m": 5.4
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 12,
+    "timestamp_sec": 101.2,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          316,
+          369,
+          490
+        ],
+        "distance_m": 4.8
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 13,
+    "timestamp_sec": 101.3,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          324,
+          372,
+          505
+        ],
+        "distance_m": 4.2
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  },
+  {
+    "frame_id": 14,
+    "timestamp_sec": 101.4,
+    "pedestrians": [
+      {
+        "id": "P1",
+        "bbox": [
+          300,
+          332,
+          375,
+          520
+        ],
+        "distance_m": 3.6
+      }
+    ],
+    "machine_telemetry": {
+      "speed_mps": 2.0,
+      "gear": "FORWARD",
+      "direction_deg": 0.0
+    }
+  }
+]

@@ -1,0 +1,74 @@
+app_name: Pedestrian Safety Fusion System
+version: 0.1.0
+log_level: INFO
+event_log_path: data/events.jsonl
+rgb_sensor:
+  sensor_id: cam_rgb
+  sensor_type: RGB
+  mode: replay
+  device_index: 0
+  replay_path: data/synthetic/scenario_1_normal
+  width: 640
+  height: 480
+  target_fps: 30.0
+  stale_timeout_sec: 0.5
+  thermal_format: GRAY_8BIT
+thermal_sensor:
+  sensor_id: cam_thermal
+  sensor_type: THERMAL
+  mode: replay
+  device_index: 1
+  replay_path: data/synthetic/scenario_1_normal
+  width: 640
+  height: 480
+  target_fps: 30.0
+  stale_timeout_sec: 0.5
+  thermal_format: GRAY_8BIT
+calibration:
+  sync_tolerance_sec: 0.05
+  enable_spatial_alignment: true
+  camera_height_m: 2.0
+  camera_pitch_deg: 15.0
+  focal_length_px: 600.0
+  ground_homography_matrix: null
+rgb_detector:
+  backend: hog_contrast
+  model_path: null
+  confidence_threshold: 0.4
+  iou_nms_threshold: 0.45
+  min_box_area_px: 200.0
+thermal_detector:
+  backend: hog_contrast
+  model_path: null
+  confidence_threshold: 0.4
+  iou_nms_threshold: 0.45
+  min_box_area_px: 200.0
+fusion:
+  spatial_iou_threshold: 0.25
+  rgb_weight: 0.5
+  thermal_weight: 0.5
+  min_fused_confidence: 0.35
+  single_sensor_confidence_penalty: 0.15
+tracking:
+  max_missed_frames: 5
+  min_hits_to_confirm: 2
+  distance_threshold_m: 2.0
+  iou_association_threshold: 0.2
+zones:
+  warning_distance_m: 8.0
+  danger_distance_m: 3.5
+  blind_spot_left_m: 2.0
+  blind_spot_right_m: 2.0
+  blind_spot_rear_m: 4.0
+  time_to_collision_caution_sec: 4.0
+  time_to_collision_danger_sec: 2.0
+state_machine:
+  caution_to_normal_frames: 5
+  danger_to_caution_frames: 3
+  degraded_recovery_frames: 5
+machine:
+  machine_id: FORKLIFT_01
+  width_m: 1.6
+  length_m: 3.2
+  max_speed_mps: 5.5
+  telemetry_stale_timeout_sec: 1.0

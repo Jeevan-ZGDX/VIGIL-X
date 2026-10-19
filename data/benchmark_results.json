@@ -1,0 +1,459 @@
+{
+  "timestamp": "2026-10-19T15:57:02Z",
+  "total_trials": 24,
+  "results": [
+    {
+      "scenario": "scenario_1_normal",
+      "mode": "fused",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 19.14,
+      "latency_p95_ms": 43.68,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "DANGER",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_1_normal",
+      "mode": "rgb_only",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.37,
+      "latency_p95_ms": 20.81,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "DANGER",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_1_normal",
+      "mode": "thermal_only",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.87,
+      "latency_p95_ms": 23.19,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "DANGER",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_2_low_light_glare",
+      "mode": "fused",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 22.79,
+      "latency_p95_ms": 27.07,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_2_low_light_glare",
+      "mode": "rgb_only",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 0,
+      "false_positives": 0,
+      "false_negatives": 15,
+      "recall": 0.0,
+      "precision": 0.0,
+      "missed_detection_rate": 1.0,
+      "latency_p50_ms": 18.36,
+      "latency_p95_ms": 21.55,
+      "warning_lead_time_sec": 0.0,
+      "alert_states": [
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_2_low_light_glare",
+      "mode": "thermal_only",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.41,
+      "latency_p95_ms": 23.82,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_3_occlusion",
+      "mode": "fused",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 19.01,
+      "latency_p95_ms": 25.37,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_3_occlusion",
+      "mode": "rgb_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.65,
+      "latency_p95_ms": 21.52,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_3_occlusion",
+      "mode": "thermal_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 0,
+      "false_positives": 0,
+      "false_negatives": 10,
+      "recall": 0.0,
+      "precision": 0.0,
+      "missed_detection_rate": 1.0,
+      "latency_p50_ms": 18.5,
+      "latency_p95_ms": 25.01,
+      "warning_lead_time_sec": 0.0,
+      "alert_states": [
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_4_blind_spot",
+      "mode": "fused",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.47,
+      "latency_p95_ms": 20.11,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_4_blind_spot",
+      "mode": "rgb_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.92,
+      "latency_p95_ms": 25.17,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_4_blind_spot",
+      "mode": "thermal_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.68,
+      "latency_p95_ms": 19.1,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_5_multiple_pedestrians",
+      "mode": "fused",
+      "frames_evaluated": 12,
+      "gt_pedestrians": 24,
+      "true_positives": 24,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 19.5,
+      "latency_p95_ms": 22.87,
+      "warning_lead_time_sec": 1.1,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_5_multiple_pedestrians",
+      "mode": "rgb_only",
+      "frames_evaluated": 12,
+      "gt_pedestrians": 24,
+      "true_positives": 24,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 19.2,
+      "latency_p95_ms": 20.16,
+      "warning_lead_time_sec": 1.1,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_5_multiple_pedestrians",
+      "mode": "thermal_only",
+      "frames_evaluated": 12,
+      "gt_pedestrians": 24,
+      "true_positives": 24,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 20.5,
+      "latency_p95_ms": 23.38,
+      "warning_lead_time_sec": 1.1,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_6_sensor_fault",
+      "mode": "fused",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 0,
+      "true_positives": 0,
+      "false_positives": 10,
+      "false_negatives": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.89,
+      "latency_p95_ms": 22.43,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_6_sensor_fault",
+      "mode": "rgb_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 0,
+      "true_positives": 0,
+      "false_positives": 10,
+      "false_negatives": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.59,
+      "latency_p95_ms": 19.27,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_6_sensor_fault",
+      "mode": "thermal_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 0,
+      "true_positives": 0,
+      "false_positives": 10,
+      "false_negatives": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 19.12,
+      "latency_p95_ms": 21.06,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_7_interference",
+      "mode": "fused",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 28.08,
+      "latency_p95_ms": 29.47,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_7_interference",
+      "mode": "rgb_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 0,
+      "false_positives": 0,
+      "false_negatives": 10,
+      "recall": 0.0,
+      "precision": 0.0,
+      "missed_detection_rate": 1.0,
+      "latency_p50_ms": 27.91,
+      "latency_p95_ms": 30.03,
+      "warning_lead_time_sec": 0.0,
+      "alert_states": [
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_7_interference",
+      "mode": "thermal_only",
+      "frames_evaluated": 10,
+      "gt_pedestrians": 10,
+      "true_positives": 10,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 28.16,
+      "latency_p95_ms": 30.35,
+      "warning_lead_time_sec": 0.9,
+      "alert_states": [
+        "CAUTION",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_8_moving_conflict",
+      "mode": "fused",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.92,
+      "latency_p95_ms": 21.97,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "DANGER",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_8_moving_conflict",
+      "mode": "rgb_only",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.7,
+      "latency_p95_ms": 22.0,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "DANGER",
+        "NORMAL"
+      ]
+    },
+    {
+      "scenario": "scenario_8_moving_conflict",
+      "mode": "thermal_only",
+      "frames_evaluated": 15,
+      "gt_pedestrians": 15,
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "missed_detection_rate": 0.0,
+      "latency_p50_ms": 18.61,
+      "latency_p95_ms": 19.88,
+      "warning_lead_time_sec": 1.4,
+      "alert_states": [
+        "DANGER",
+        "NORMAL"
+      ]
+    }
+  ]
+}

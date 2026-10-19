@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multipurpose Pedestrian Safety System - RGB/Thermal Fusion</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-title">
+        <h1>Pedestrian Safety Fusion System</h1>
+        <p class="subtitle">Multimodal RGB + Thermal Infrared Edge Protection</p>
+      </div>
+      <div id="alert-banner" class="alert-banner normal">
+        <span class="alert-icon">●</span>
+        <span id="alert-text">NORMAL</span>
+      </div>
+    </header>
+
+    <!-- Main Alert Reason & Machine Status -->
+    <section class="banner-reason-bar">
+      <div class="reason-content">
+        <strong>Status / Reason:</strong> <span id="reason-text">Initializing pipeline...</span>
+      </div>
+      <div class="system-meta">
+        <span>FPS: <strong id="val-fps">0.0</strong></span>
+        <span>Latency: <strong id="val-latency">0.0</strong> ms</span>
+      </div>
+    </section>
+
+    <!-- Video Streams Row -->
+    <main class="grid-layout">
+      <div class="stream-card">
+        <div class="stream-header">
+          <h3>RGB Optical Stream</h3>
+          <span id="status-rgb" class="badge badge-ok">HEALTHY</span>
+        </div>
+        <div class="video-wrapper">
+          <img id="stream-rgb" src="/stream/rgb" alt="RGB Video Feed">
+        </div>
+      </div>
+
+      <div class="stream-card">
+        <div class="stream-header">
+          <h3>Thermal Infrared Stream</h3>
+          <span id="status-thermal" class="badge badge-ok">HEALTHY</span>
+        </div>
+        <div class="video-wrapper">
+          <img id="stream-thermal" src="/stream/thermal" alt="Thermal Video Feed">
+        </div>
+      </div>
+    </main>
+
+    <!-- Diagnostic and Telemetry Panels -->
+    <div class="dashboard-panels">
+      <!-- Active Tracks Table -->
+      <div class="panel">
+        <h3>Active Pedestrian Tracks</h3>
+        <table class="tracks-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Distance</th>
+              <th>Speed</th>
+              <th>Confidence</th>
+              <th>Sensors</th>
+            </tr>
+          </thead>
+          <tbody id="tracks-body">
+            <tr><td colspan="5" style="text-align:center; color:#888;">No active pedestrian tracks</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Machine Telemetry & Hardware Actuator Outputs -->
+      <div class="panel">
+        <h3>Equipment Integration Simulator</h3>
+        <div class="telemetry-grid">
+          <div class="stat-box">
+            <label>Machine Speed</label>
+            <div class="stat-value" id="val-speed">0.0 m/s</div>
+          </div>
+          <div class="stat-box">
+            <label>Gear</label>
+            <div class="stat-value" id="val-gear">FORWARD</div>
+          </div>
+          <div class="stat-box">
+            <label>Visual Strobe</label>
+            <div class="stat-value" id="val-strobe">OFF</div>
+          </div>
+          <div class="stat-box">
+            <label>Cabin Buzzer</label>
+            <div class="stat-value" id="val-buzzer">SILENT</div>
+          </div>
+        </div>
+
+        <div class="cabin-display">
+          <label>In-Cabin Enunciator Display</label>
+          <div id="cabin-display-text" class="cabin-text">READY - SYSTEM OK</div>
+        </div>
+      </div>
+
+      <!-- Controls & Fault Injection -->
+      <div class="panel">
+        <h3>Simulator & Fault Injection</h3>
+        <div class="controls-group">
+          <button id="btn-step" class="btn btn-primary">Step Pipeline</button>
+          <button id="btn-recover" class="btn btn-success">Recover All Sensors</button>
+        </div>
+        <div class="controls-group">
+          <button id="btn-fault-rgb" class="btn btn-warning">Disconnect RGB</button>
+          <button id="btn-fault-thermal" class="btn btn-warning">Stale Thermal</button>
+          <button id="btn-fault-telem" class="btn btn-danger">Drop Telemetry</button>
+        </div>
+        <div class="slider-row">
+          <label>Machine Speed: <span id="label-speed-slider">0.0</span> m/s</label>
+          <input type="range" id="slider-speed" min="-3.0" max="6.0" step="0.5" value="0.0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Event Audit History -->
+    <section class="panel event-history">
+      <h3>Recent Safety Events Audit Log</h3>
+      <div class="table-container">
+        <table class="tracks-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Event ID</th>
+              <th>Alert State</th>
+              <th>Reason</th>
+              <th>Min Dist</th>
+              <th>TTC</th>
+            </tr>
+          </thead>
+          <tbody id="events-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
