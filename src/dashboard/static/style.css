@@ -88,6 +88,60 @@ body {
   display: flex;
   gap: 16px;
   color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.kpi-value small {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.kpi-sub {
+  font-size: 0.75rem;
+  color: #38bdf8;
+  margin-top: 4px;
+}
+
+.select-box {
+  width: 100%;
+  padding: 6px 10px;
+  background-color: #0f172a;
+  border: 1px solid var(--border-color);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.85rem;
 }
 
 .grid-layout {

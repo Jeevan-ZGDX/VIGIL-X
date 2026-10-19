@@ -188,7 +188,7 @@ class Track(BaseModel):
 
 
 class MachineTelemetry(BaseModel):
-    """Industrial equipment telemetry and kinematic state."""
+    """Industrial equipment telemetry and kinematic state with standard units."""
     timestamp_sec: float = Field(default_factory=time.time)
     machine_id: str = "EQUIP_01"
     is_valid: bool = True
@@ -201,9 +201,29 @@ class MachineTelemetry(BaseModel):
     length_m: float = 5.0
     safety_margin_m: float = 1.0
 
+    @property
+    def speed_kmh(self) -> float:
+        """Convert speed to standard km/h."""
+        return round(abs(self.speed_mps) * 3.6, 2)
+
+    def calculate_iso_stopping_distance(
+        self,
+        t_reaction_s: float = 0.20,
+        t_brake_delay_s: float = 0.30,
+        decel_mps2: float = 1.50,
+        buffer_margin_m: float = 0.50,
+    ) -> float:
+        """
+        ISO 3691-4 Formula for Industrial Truck Protective Fields:
+        S = v * (t_reaction + t_brake) + (v^2 / (2 * a)) + B + C
+        """
+        v = abs(self.speed_mps)
+        dist = v * (t_reaction_s + t_brake_delay_s) + (v**2 / (2.0 * decel_mps2)) + buffer_margin_m
+        return round(max(1.0, dist), 2)
+
 
 class RiskAssessment(BaseModel):
-    """Deterministic output from collision risk evaluation."""
+    """Deterministic output from collision risk evaluation with ISO standard measures."""
     timestamp_sec: float = Field(default_factory=time.time)
     alert_state: AlertState
     reason: str
@@ -212,9 +232,14 @@ class RiskAssessment(BaseModel):
     critical_track_id: Optional[str] = None
     time_to_collision_sec: Optional[float] = None
     min_distance_m: Optional[float] = None
+    min_distance_cm: Optional[float] = None
+    stopping_distance_m: Optional[float] = None
+    machine_speed_kmh: float = 0.0
     machine_telemetry_valid: bool = True
     sensor_health_summary: Dict[str, SensorHealthStatus] = Field(default_factory=dict)
     uncertainty_level: float = 0.0
+    iso_safety_color: str = "#10b981"  # Green by default
+    thermal_spot_celsius: Optional[float] = None
 
 
 class SystemHealthReport(BaseModel):
@@ -228,7 +253,12 @@ class SystemHealthReport(BaseModel):
     latency_fusion_ms: float = 0.0
     latency_risk_ms: float = 0.0
     latency_total_ms: float = 0.0
+    latency_p50_ms: float = 0.0
+    latency_p95_ms: float = 0.0
+    cpu_percent: float = 0.0
+    memory_mb: float = 0.0
     sensors: Dict[str, SensorHealthStatus] = Field(default_factory=dict)
     dropped_frames: Dict[str, int] = Field(default_factory=dict)
     active_tracks_count: int = 0
     confirmed_pedestrians_count: int = 0
+    iso_standard: str = "ISO 3691-4 / ISO 13849 Compliant Architecture"

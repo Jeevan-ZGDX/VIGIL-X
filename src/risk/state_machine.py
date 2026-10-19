@@ -147,6 +147,18 @@ class AlertStateMachine:
             self._deescalation_counter = 0
             self._pending_lower_state = None
 
+        # Step 4: Compute ISO Standard Safety Measures
+        min_cm = int(round(min_dist * 100)) if min_dist is not None else None
+        stopping_dist = telemetry.calculate_iso_stopping_distance() if telemetry else 1.0
+        speed_kmh = telemetry.speed_kmh if telemetry else 0.0
+
+        iso_colors = {
+            AlertState.NORMAL: "#10b981",    # ISO 7010 Green
+            AlertState.CAUTION: "#f59e0b",   # ISO 7010 Amber
+            AlertState.DANGER: "#ef4444",    # ISO 7010 Red
+            AlertState.DEGRADED: "#d97706",  # ISO Fault
+        }
+
         return RiskAssessment(
             timestamp_sec=timestamp_sec,
             alert_state=self.current_state,
@@ -156,7 +168,11 @@ class AlertStateMachine:
             critical_track_id=critical_track_id,
             time_to_collision_sec=min_ttc,
             min_distance_m=min_dist,
+            min_distance_cm=min_cm,
+            stopping_distance_m=stopping_dist,
+            machine_speed_kmh=speed_kmh,
             machine_telemetry_valid=telem_valid,
             sensor_health_summary=sensor_health,
             uncertainty_level=0.1 if self.current_state == AlertState.NORMAL else 0.3,
+            iso_safety_color=iso_colors.get(self.current_state, "#10b981"),
         )

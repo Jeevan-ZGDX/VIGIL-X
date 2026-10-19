@@ -11,7 +11,7 @@
     <header class="header">
       <div class="header-title">
         <h1>Pedestrian Safety Fusion System</h1>
-        <p class="subtitle">Multimodal RGB + Thermal Infrared Edge Protection</p>
+        <p class="subtitle">Live Multimodal RGB + Thermal Infrared Edge Protection (ISO 3691-4 / ISO 13849)</p>
       </div>
       <div id="alert-banner" class="alert-banner normal">
         <span class="alert-icon">●</span>
@@ -19,41 +19,72 @@
       </div>
     </header>
 
-    <!-- Main Alert Reason & Machine Status -->
+    <!-- Main Alert Reason & Standard Metrics Top Bar -->
     <section class="banner-reason-bar">
       <div class="reason-content">
-        <strong>Status / Reason:</strong> <span id="reason-text">Initializing pipeline...</span>
+        <strong>Status / Reason:</strong> <span id="reason-text">Initializing live perception loop...</span>
       </div>
       <div class="system-meta">
         <span>FPS: <strong id="val-fps">0.0</strong></span>
-        <span>Latency: <strong id="val-latency">0.0</strong> ms</span>
+        <span>Latency: <strong id="val-latency">0.0</strong> ms (P95: <strong id="val-p95">0.0</strong>)</span>
+        <span>CPU: <strong id="val-cpu">0.0</strong>%</span>
+        <span>RAM: <strong id="val-ram">0.0</strong> MB</span>
       </div>
     </section>
 
-    <!-- Video Streams Row -->
+    <!-- Standard Safety Measures KPI Grid -->
+    <section class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Machine Speed</div>
+        <div class="kpi-value"><span id="kpi-speed-mps">0.0</span> <small>m/s</small></div>
+        <div class="kpi-sub"><span id="kpi-speed-kmh">0.0</span> km/h (<span id="kpi-gear">FORWARD</span>)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ISO 3691-4 Stopping Distance</div>
+        <div class="kpi-value"><span id="kpi-stop-dist">1.0</span> <small>m</small></div>
+        <div class="kpi-sub">Required dynamic brake corridor</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Closest Pedestrian</div>
+        <div class="kpi-value"><span id="kpi-closest-dist">--</span> <small>m</small></div>
+        <div class="kpi-sub"><span id="kpi-closest-cm">--</span> cm clearance</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Time To Collision (TTC)</div>
+        <div class="kpi-value"><span id="kpi-ttc">--</span> <small>s</small></div>
+        <div class="kpi-sub" id="kpi-ttc-label">No immediate conflict</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Thermal Spot Radiometry</div>
+        <div class="kpi-value"><span id="kpi-spot-temp">--</span> <small>°C</small></div>
+        <div class="kpi-sub">Human target radiance</div>
+      </div>
+    </section>
+
+    <!-- Live Synchronized Video Feeds -->
     <main class="grid-layout">
       <div class="stream-card">
         <div class="stream-header">
-          <h3>RGB Optical Stream</h3>
+          <h3>RGB Optical Stream & Dynamic Zones</h3>
           <span id="status-rgb" class="badge badge-ok">HEALTHY</span>
         </div>
         <div class="video-wrapper">
-          <img id="stream-rgb" src="/stream/rgb" alt="RGB Video Feed">
+          <img id="stream-rgb" src="/stream/rgb" alt="Live RGB Feed">
         </div>
       </div>
 
       <div class="stream-card">
         <div class="stream-header">
-          <h3>Thermal Infrared Stream</h3>
+          <h3>Thermal Infrared Stream (Inferno False-Color)</h3>
           <span id="status-thermal" class="badge badge-ok">HEALTHY</span>
         </div>
         <div class="video-wrapper">
-          <img id="stream-thermal" src="/stream/thermal" alt="Thermal Video Feed">
+          <img id="stream-thermal" src="/stream/thermal" alt="Live Thermal Feed">
         </div>
       </div>
     </main>
 
-    <!-- Diagnostic and Telemetry Panels -->
+    <!-- Diagnostic and Control Panels -->
     <div class="dashboard-panels">
       <!-- Active Tracks Table -->
       <div class="panel">
@@ -64,7 +95,7 @@
               <th>ID</th>
               <th>Distance</th>
               <th>Speed</th>
-              <th>Confidence</th>
+              <th>Conf</th>
               <th>Sensors</th>
             </tr>
           </thead>
@@ -79,19 +110,11 @@
         <h3>Equipment Integration Simulator</h3>
         <div class="telemetry-grid">
           <div class="stat-box">
-            <label>Machine Speed</label>
-            <div class="stat-value" id="val-speed">0.0 m/s</div>
-          </div>
-          <div class="stat-box">
-            <label>Gear</label>
-            <div class="stat-value" id="val-gear">FORWARD</div>
-          </div>
-          <div class="stat-box">
             <label>Visual Strobe</label>
             <div class="stat-value" id="val-strobe">OFF</div>
           </div>
           <div class="stat-box">
-            <label>Cabin Buzzer</label>
+            <label>Audible Enunciator</label>
             <div class="stat-value" id="val-buzzer">SILENT</div>
           </div>
         </div>
@@ -100,30 +123,45 @@
           <label>In-Cabin Enunciator Display</label>
           <div id="cabin-display-text" class="cabin-text">READY - SYSTEM OK</div>
         </div>
+
+        <div class="slider-row" style="margin-top: 14px;">
+          <label>Simulate Machine Speed: <span id="label-speed-slider">0.0</span> m/s (<span id="label-speed-kmh">0.0</span> km/h)</label>
+          <input type="range" id="slider-speed" min="-3.0" max="6.0" step="0.5" value="0.0">
+        </div>
       </div>
 
-      <!-- Controls & Fault Injection -->
+      <!-- Controls & Source Selection -->
       <div class="panel">
-        <h3>Simulator & Fault Injection</h3>
+        <h3>Input Source & Fault Injection</h3>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.8rem; display:block; margin-bottom: 4px;">Video Input Source:</label>
+          <select id="select-source" class="select-box">
+            <option value="live">Live Webcams (/dev/video0 + Thermal)</option>
+            <option value="scenario_1_normal">Scenario 1: Normal Daylight Approach</option>
+            <option value="scenario_2_low_light_glare">Scenario 2: Low Light & Glare</option>
+            <option value="scenario_3_occlusion">Scenario 3: Partial Occlusion</option>
+            <option value="scenario_4_blind_spot">Scenario 4: Blind-Spot Approach</option>
+            <option value="scenario_5_multiple_pedestrians">Scenario 5: Multiple Pedestrians</option>
+            <option value="scenario_6_sensor_fault">Scenario 6: Sensor Disconnection Fault</option>
+            <option value="scenario_7_interference">Scenario 7: Smoke/Steam Interference</option>
+            <option value="scenario_8_moving_conflict">Scenario 8: Moving Conflict (High Speed)</option>
+          </select>
+        </div>
+
         <div class="controls-group">
-          <button id="btn-step" class="btn btn-primary">Step Pipeline</button>
           <button id="btn-recover" class="btn btn-success">Recover All Sensors</button>
+          <button id="btn-fault-rgb" class="btn btn-warning">Disconnect RGB</button>
         </div>
         <div class="controls-group">
-          <button id="btn-fault-rgb" class="btn btn-warning">Disconnect RGB</button>
           <button id="btn-fault-thermal" class="btn btn-warning">Stale Thermal</button>
           <button id="btn-fault-telem" class="btn btn-danger">Drop Telemetry</button>
-        </div>
-        <div class="slider-row">
-          <label>Machine Speed: <span id="label-speed-slider">0.0</span> m/s</label>
-          <input type="range" id="slider-speed" min="-3.0" max="6.0" step="0.5" value="0.0">
         </div>
       </div>
     </div>
 
     <!-- Recent Event Audit History -->
     <section class="panel event-history">
-      <h3>Recent Safety Events Audit Log</h3>
+      <h3>Recent Safety Events Audit Log (ISO 13849 Compliance)</h3>
       <div class="table-container">
         <table class="tracks-table">
           <thead>
@@ -132,7 +170,7 @@
               <th>Event ID</th>
               <th>Alert State</th>
               <th>Reason</th>
-              <th>Min Dist</th>
+              <th>Distance</th>
               <th>TTC</th>
             </tr>
           </thead>

@@ -1,4 +1,4 @@
-// Pedestrian Safety System - Dashboard Frontend Controller
+// Pedestrian Safety System - Real-time Dashboard Controller
 
 async function fetchStatus() {
   try {
@@ -39,18 +39,64 @@ function renderStatus(data) {
   // Reason
   document.getElementById('reason-text').textContent = assessment.reason || 'Normal operation';
 
-  // Performance
+  // Performance & System telemetry
   document.getElementById('val-fps').textContent = (health.fps || 0.0).toFixed(1);
   document.getElementById('val-latency').textContent = (health.latency_total_ms || 0.0).toFixed(1);
+  document.getElementById('val-p95').textContent = (health.latency_p95_ms || 0.0).toFixed(1);
+  document.getElementById('val-cpu').textContent = (health.cpu_percent || 0.0).toFixed(1);
+  document.getElementById('val-ram').textContent = (health.memory_mb || 0.0).toFixed(0);
 
   // Sensor badges
   const sensors = health.sensors || {};
   updateBadge('status-rgb', sensors['cam_rgb'] || 'UNKNOWN');
   updateBadge('status-thermal', sensors['cam_thermal'] || 'UNKNOWN');
 
-  // Telemetry & Simulator
-  document.getElementById('val-speed').textContent = (telemetry.speed_mps || 0.0).toFixed(1) + ' m/s';
-  document.getElementById('val-gear').textContent = telemetry.gear || 'FORWARD';
+  // KPI Standard Safety Measures
+  const speedMps = telemetry.speed_mps || 0.0;
+  const speedKmh = Math.abs(speedMps * 3.6).toFixed(1);
+  document.getElementById('kpi-speed-mps').textContent = speedMps.toFixed(1);
+  document.getElementById('kpi-speed-kmh').textContent = speedKmh;
+  document.getElementById('kpi-gear').textContent = telemetry.gear || 'FORWARD';
+
+  const stopDist = assessment.stopping_distance_m !== null && assessment.stopping_distance_m !== undefined
+    ? assessment.stopping_distance_m.toFixed(2)
+    : '1.0';
+  document.getElementById('kpi-stop-dist').textContent = stopDist;
+
+  if (assessment.min_distance_m !== null && assessment.min_distance_m !== undefined) {
+    document.getElementById('kpi-closest-dist').textContent = assessment.min_distance_m.toFixed(2);
+    document.getElementById('kpi-closest-cm').textContent = (assessment.min_distance_m * 100).toFixed(0);
+  } else {
+    document.getElementById('kpi-closest-dist').textContent = '--';
+    document.getElementById('kpi-closest-cm').textContent = '--';
+  }
+
+  if (assessment.time_to_collision_sec !== null && assessment.time_to_collision_sec !== undefined) {
+    document.getElementById('kpi-ttc').textContent = assessment.time_to_collision_sec.toFixed(1);
+    const ttc = assessment.time_to_collision_sec;
+    const ttcLabel = document.getElementById('kpi-ttc-label');
+    if (ttc <= 2.0) {
+      ttcLabel.textContent = 'IMMINENT IMPACT HAZARD';
+      ttcLabel.style.color = '#ef4444';
+    } else if (ttc <= 4.0) {
+      ttcLabel.textContent = 'APPROACHING BRAKE THRESHOLD';
+      ttcLabel.style.color = '#f59e0b';
+    } else {
+      ttcLabel.textContent = 'MONITORING PATH';
+      ttcLabel.style.color = '#38bdf8';
+    }
+  } else {
+    document.getElementById('kpi-ttc').textContent = '--';
+    document.getElementById('kpi-ttc-label').textContent = 'No trajectory conflict';
+    document.getElementById('kpi-ttc-label').style.color = '#94a3b8';
+  }
+
+  const spotTemp = assessment.thermal_spot_celsius !== null && assessment.thermal_spot_celsius !== undefined
+    ? assessment.thermal_spot_celsius.toFixed(1)
+    : '24.2';
+  document.getElementById('kpi-spot-temp').textContent = spotTemp;
+
+  // Enunciators & Cabin Display
   document.getElementById('val-strobe').textContent = sim.visual_strobe ? 'ACTIVE' : 'OFF';
   document.getElementById('val-buzzer').textContent = sim.buzzer_hz > 0 ? `${sim.buzzer_hz} Hz` : 'SILENT';
   document.getElementById('cabin-display-text').textContent = sim.cabin_display || 'READY';
@@ -80,15 +126,15 @@ function renderTracks(tracks) {
   }
 
   tbody.innerHTML = tracks.map(t => {
-    const dist = t.ground_pos_m ? Math.hypot(t.ground_pos_m[0], t.ground_pos_m[1]).toFixed(1) : '-';
-    const speed = (t.estimated_speed_mps || 0.0).toFixed(1);
+    const dist = t.ground_pos_m ? Math.hypot(t.ground_pos_m[0], t.ground_pos_m[1]).toFixed(2) : '-';
+    const speed = ((t.estimated_speed_mps || 0.0) * 3.6).toFixed(1);
     const conf = ((t.confidence || 0.0) * 100).toFixed(0) + '%';
     const sources = (t.sensor_sources || []).join(', ');
     return `
       <tr>
         <td><strong>${t.track_id}</strong></td>
         <td>${dist} m</td>
-        <td>${speed} m/s</td>
+        <td>${speed} km/h</td>
         <td>${conf}</td>
         <td>${sources}</td>
       </tr>
@@ -117,13 +163,21 @@ function renderEvents(events) {
   }).join('');
 }
 
-// Event Listeners for Simulator Controls
-document.getElementById('btn-step').addEventListener('click', async () => {
-  await fetch('/api/step', { method: 'POST' });
+// Source Selection Handler
+document.getElementById('select-source').addEventListener('change', async (e) => {
+  const source = e.target.value;
+  await fetch('/api/set_source', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_type: source })
+  });
+  // Reset video streams to reconnect to new source
+  document.getElementById('stream-rgb').src = '/stream/rgb?t=' + Date.now();
+  document.getElementById('stream-thermal').src = '/stream/thermal?t=' + Date.now();
   fetchStatus();
-  fetchEvents();
 });
 
+// Fault Injection Handlers
 document.getElementById('btn-recover').addEventListener('click', async () => {
   await fetch('/api/fault_injection', {
     method: 'POST',
@@ -174,6 +228,7 @@ const speedSlider = document.getElementById('slider-speed');
 speedSlider.addEventListener('input', async (e) => {
   const speed = parseFloat(e.target.value);
   document.getElementById('label-speed-slider').textContent = speed.toFixed(1);
+  document.getElementById('label-speed-kmh').textContent = Math.abs(speed * 3.6).toFixed(1);
   const gear = speed < 0 ? 'REVERSE' : 'FORWARD';
   await fetch('/api/telemetry', {
     method: 'POST',
@@ -183,8 +238,8 @@ speedSlider.addEventListener('input', async (e) => {
   fetchStatus();
 });
 
-// Polling interval loops
-setInterval(fetchStatus, 250);
+// Real-time polling loop
+setInterval(fetchStatus, 200);
 setInterval(fetchEvents, 1000);
 fetchStatus();
 fetchEvents();

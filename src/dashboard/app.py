@@ -1,10 +1,12 @@
 """
 FastAPI Safety Dashboard backend server.
-Provides MJPEG video feeds, REST status APIs, telemetry control, fault injection, and event audits.
+Runs continuous real-time pipeline execution, live camera streams,
+standard metric telemetry, fault injection, and scenario replay switching.
 """
 
 from __future__ import annotations
 import asyncio
+from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
 import time
@@ -22,8 +24,6 @@ from src.pipeline import SafetyPipeline
 
 logger = logging.getLogger(__name__)
 
-from contextlib import asynccontextmanager
-
 # Global pipeline instance
 pipeline: Optional[SafetyPipeline] = None
 
@@ -40,12 +40,35 @@ class FaultInjectionRequest(BaseModel):
     stale_duration_sec: float = 1.0
 
 
+class SourceSelectionRequest(BaseModel):
+    source_type: str  # "live" or scenario name (e.g. "scenario_1_normal")
+
+
 def get_pipeline() -> SafetyPipeline:
     global pipeline
     if pipeline is None:
         cfg = SystemConfig.load_from_yaml("config/default_config.yaml")
+
+        # Probe for physical camera availability
+        cap_test = cv2.VideoCapture(0)
+        has_camera = cap_test.isOpened()
+        if has_camera:
+            cap_test.release()
+            cfg.rgb_sensor.mode = "live"
+            cfg.rgb_sensor.device_index = 0
+            cfg.thermal_sensor.mode = "live"
+            cfg.thermal_sensor.device_index = 1
+            logger.info("Auto-detected live webcam on /dev/video0; configuring live real-time pipeline")
+        else:
+            cfg.rgb_sensor.mode = "replay"
+            cfg.rgb_sensor.replay_path = "data/synthetic/scenario_1_normal"
+            cfg.thermal_sensor.mode = "replay"
+            cfg.thermal_sensor.replay_path = "data/synthetic/scenario_1_normal"
+            logger.info("No physical webcam detected; initializing with scenario 1 replay")
+
         pipeline = SafetyPipeline(cfg)
-        pipeline.start()
+        pipeline.start_realtime_loop(target_fps=25.0)
+
     return pipeline
 
 
@@ -55,10 +78,16 @@ async def lifespan(app: FastAPI):
     yield
     global pipeline
     if pipeline is not None:
+        pipeline.stop_realtime_loop()
         pipeline.stop()
 
 
-app = FastAPI(title="Pedestrian Safety System Dashboard", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Pedestrian Safety System Dashboard",
+    description="Multimodal RGB + Thermal Infrared Edge Safety System",
+    version="0.2.0",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,7 +103,7 @@ async def serve_index():
     index_path = Path(__file__).parent / "static" / "index.html"
     if index_path.exists():
         return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>Pedestrian Safety System API Active</h1>")
+    return HTMLResponse("<h1>Pedestrian Safety System Active</h1>")
 
 
 @app.get("/health")
@@ -88,6 +117,7 @@ async def health_check():
         "overall_health": report.overall_health,
         "alert_state": report.alert_state.value,
         "fps": report.fps,
+        "latency_p95_ms": report.latency_p95_ms,
         "sensors": {k: v.value for k, v in report.sensors.items()},
     }
 
@@ -138,7 +168,34 @@ async def step_pipeline():
         "reason": assessment.reason,
         "active_tracks": len(pipe.last_tracks),
         "fps": health.fps,
+        "latency_ms": health.latency_total_ms,
     }
+
+
+@app.post("/api/set_source")
+async def set_source(payload: SourceSelectionRequest):
+    """Switch pipeline between live cameras and pre-recorded evaluation scenarios."""
+    global pipeline
+    pipe = get_pipeline()
+    pipe.stop_realtime_loop()
+    pipe.stop()
+
+    cfg = SystemConfig.load_from_yaml("config/default_config.yaml")
+    if payload.source_type == "live":
+        cfg.rgb_sensor.mode = "live"
+        cfg.rgb_sensor.device_index = 0
+        cfg.thermal_sensor.mode = "live"
+        cfg.thermal_sensor.device_index = 1
+    else:
+        scen_path = f"data/synthetic/{payload.source_type}"
+        cfg.rgb_sensor.mode = "replay"
+        cfg.rgb_sensor.replay_path = scen_path
+        cfg.thermal_sensor.mode = "replay"
+        cfg.thermal_sensor.replay_path = scen_path
+
+    pipeline = SafetyPipeline(cfg)
+    pipeline.start_realtime_loop(target_fps=25.0)
+    return {"status": "source_switched", "source": payload.source_type}
 
 
 @app.post("/api/fault_injection")
@@ -186,11 +243,11 @@ def generate_mjpeg_stream(stream_type: str):
         else:
             frame = pipe.render_annotated_thermal_frame()
 
-        if frame is not None:
-            ret, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
+        if frame is not None and frame.size > 0:
+            ret, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             if ret:
                 yield (b"--frame\r\nContent-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n")
-        time.sleep(0.04)  # ~25 fps stream
+        time.sleep(0.033)  # ~30 FPS streaming pace
 
 
 @app.get("/stream/rgb")
