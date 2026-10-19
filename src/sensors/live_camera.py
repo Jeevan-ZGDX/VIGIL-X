@@ -87,4 +87,5 @@ class LiveCameraSensor(BaseSensor):
         if frame.shape[1] != self.config.width or frame.shape[0] != self.config.height:
             frame = cv2.resize(frame, (self.config.width, self.config.height))
 
+        self.last_captured_frame = frame
         return frame

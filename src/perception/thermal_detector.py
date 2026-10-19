@@ -64,6 +64,11 @@ class ThermalPedestrianDetector(BaseDetector):
         candidate_scores: List[float] = []
 
         mean_scene_temp = float(np.mean(gray_8u))
+        scene_std = float(np.std(gray_8u))
+
+        # If scene is thermally flat (ambient room with no heat sources), reject immediately
+        if scene_std < 8.0:
+            return []
 
         for cnt in contours:
             area = cv2.contourArea(cnt)
@@ -87,12 +92,16 @@ class ThermalPedestrianDetector(BaseDetector):
             internal_mean = float(np.mean(roi))
             contrast_diff = internal_mean - mean_scene_temp
 
+            # Strict thermal delta check: must be significantly warmer than background
+            if contrast_diff < 15.0:
+                continue
+
             # Normalize confidence based on contrast and aspect ratio solidity
-            contrast_score = max(0.0, min(1.0, contrast_diff / 50.0))
+            contrast_score = max(0.0, min(1.0, (contrast_diff - 10.0) / 40.0))
             aspect_score = 1.0 - abs(aspect_ratio - 2.5) / 2.5  # Ideal pedestrian aspect ratio is ~2.5
             aspect_score = max(0.2, min(1.0, aspect_score))
 
-            conf = 0.55 * contrast_score + 0.45 * aspect_score
+            conf = 0.70 * contrast_score + 0.30 * aspect_score
             conf = max(0.0, min(1.0, conf))
 
             if conf < self.config.confidence_threshold:

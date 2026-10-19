@@ -46,17 +46,19 @@ class RGBPedestrianDetector(BaseDetector):
         super().__init__(config, sensor_id)
         self.ort_session = None
 
-        if self.config.backend == "onnx" and self.config.model_path:
-            model_p = Path(self.config.model_path)
+        if self.config.backend == "onnx" and (self.config.model_path or Path("models/yolov5n.onnx").exists()):
+            model_p = Path(self.config.model_path) if self.config.model_path else Path("models/yolov5n.onnx")
             if model_p.exists():
                 try:
                     import onnxruntime as ort
                     self.ort_session = ort.InferenceSession(str(model_p), providers=["CPUExecutionProvider"])
-                    logger.info(f"Loaded ONNX RGB model from {model_p}")
+                    self.input_name = self.ort_session.get_inputs()[0].name
+                    self.input_type = self.ort_session.get_inputs()[0].type
+                    logger.info(f"Loaded YOLO ONNX pedestrian model from {model_p} (type={self.input_type})")
                 except Exception as e:
                     logger.warning(f"Failed to load ONNX model, falling back to gradient baseline: {e}")
 
-        logger.info(f"Initialized RGB pedestrian detector (backend={self.config.backend})")
+        logger.info(f"Initialized RGB pedestrian detector (has_onnx={self.ort_session is not None})")
 
     def _assess_illumination(self, gray: np.ndarray) -> dict:
         """Measure average brightness, contrast, and glare saturation ratio."""
@@ -92,12 +94,38 @@ class RGBPedestrianDetector(BaseDetector):
         candidate_boxes: List[BoundingBox] = []
         candidate_scores: List[float] = []
 
-        # ONNX path if session is loaded
+        # ONNX deep learning inference path (Real YOLOv5 Pedestrian Model)
         if self.ort_session is not None:
-            # Model inference placeholder for custom ONNX models
-            pass
+            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) if (img.ndim == 3 and img.shape[2] == 3) else cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+            target_dtype = np.float16 if "float16" in getattr(self, "input_type", "") else np.float32
+            input_tensor = cv2.resize(rgb, (640, 640)).astype(target_dtype) / target_dtype(255.0)
+            input_tensor = np.transpose(input_tensor, (2, 0, 1))[np.newaxis, ...]
+
+            raw_out = self.ort_session.run(None, {self.input_name: input_tensor})[0][0].astype(np.float32)
+            # YOLO output: [25200, 85]
+            obj_conf = raw_out[:, 4]
+            cls_person = raw_out[:, 5]  # Class 0: person
+            scores = obj_conf * cls_person
+
+            scale_x = w / 640.0
+            scale_y = h / 640.0
+
+            mask = scores >= self.config.confidence_threshold
+            matched_dets = raw_out[mask]
+            matched_scores = scores[mask]
+
+            for row, score in zip(matched_dets, matched_scores):
+                cx, cy, bw, bh = row[0:4]
+                x1 = max(0.0, float((cx - bw / 2.0) * scale_x))
+                y1 = max(0.0, float((cy - bh / 2.0) * scale_y))
+                x2 = min(float(w - 1), float((cx + bw / 2.0) * scale_x))
+                y2 = min(float(h - 1), float((cy + bh / 2.0) * scale_y))
+
+                if (x2 - x1) * (y2 - y1) >= self.config.min_box_area_px:
+                    candidate_boxes.append(BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2))
+                    candidate_scores.append(float(score))
         else:
-            # Gradient & silhouette edge pedestrian detection baseline
+            # Gradient & silhouette edge pedestrian detection baseline (used when backend != "onnx")
             # Computes spatial gradients to find vertical pedestrian silhouettes
             blurred = cv2.GaussianBlur(gray, (5, 5), 0)
             grad_x = cv2.Sobel(blurred, cv2.CV_32F, 1, 0, ksize=3)

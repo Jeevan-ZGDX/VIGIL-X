@@ -58,11 +58,19 @@ class ThermalProcessor:
         if gray.dtype == np.uint16 or gray.dtype == np.int32:
             min_val = float(np.min(gray))
             max_val = float(np.max(gray))
-            if max_val > min_val:
-                norm = ((gray.astype(np.float32) - min_val) / (max_val - min_val) * 255.0).clip(0, 255)
+            # Check if radiometric centikelvin (values > 10000, e.g. 29415 = 21 C)
+            if min_val > 10000:
+                # Calibrated industrial safety range: 15.0 C (28815 cK) to 42.0 C (31515 cK)
+                calib_min = 28815.0
+                calib_max = 31515.0
+                norm = ((gray.astype(np.float32) - calib_min) / (calib_max - calib_min) * 255.0).clip(0, 255)
                 gray_8u = norm.astype(np.uint8)
             else:
-                gray_8u = np.zeros_like(gray, dtype=np.uint8)
+                if max_val > min_val:
+                    norm = ((gray.astype(np.float32) - min_val) / (max_val - min_val) * 255.0).clip(0, 255)
+                    gray_8u = norm.astype(np.uint8)
+                else:
+                    gray_8u = np.zeros_like(gray, dtype=np.uint8)
         elif gray.dtype in (np.float32, np.float64):
             min_val = float(np.min(gray))
             max_val = float(np.max(gray))
@@ -74,8 +82,8 @@ class ThermalProcessor:
         else:
             gray_8u = gray.astype(np.uint8)
 
-        # Apply CLAHE to boost local temperature contrasts (e.g. human body vs background)
-        if self.enable_clahe:
+        # Apply CLAHE only if scene exhibits significant temperature dynamic range
+        if self.enable_clahe and float(np.std(gray_8u)) > 15.0:
             gray_8u = self.clahe.apply(gray_8u)
 
         # Resize to standard target dimensions only if specified
@@ -101,11 +109,16 @@ class ThermalProcessor:
         Segment elevated heat signatures (warm bodies) against cooler industrial floors/machinery.
         Uses adaptive percentile thresholding and morphological cleanup.
         """
+        # If no pixels reach warm human body temperature (> 30 C, ~135 intensity on calibrated scale)
+        # or if the image has negligible standard deviation, suppress false contours completely
+        if float(np.max(gray_8u)) < 135 or float(np.std(gray_8u)) < 8.0:
+            return np.zeros_like(gray_8u)
+
         p_low = np.percentile(gray_8u, low_percentile)
         p_high = np.percentile(gray_8u, high_percentile)
 
         # Mask pixels in the elevated body temperature range
-        _, thresh = cv2.threshold(gray_8u, int(p_low), 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(gray_8u, int(max(p_low, 135)), 255, cv2.THRESH_BINARY)
 
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         cleaned = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)

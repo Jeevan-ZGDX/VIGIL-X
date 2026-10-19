@@ -78,20 +78,11 @@ class LiveThermalAdapter(BaseSensor):
         # Thermal point spread function blur
         blurred = cv2.GaussianBlur(gray, (7, 7), 2.0)
 
-        # Baseline ambient temperature ~22.5 C (29565 cK)
-        # Scale pixel intensity to temperature range [20.0 C to 37.5 C]
-        temp_celsius = 20.0 + (blurred.astype(np.float32) / 255.0) * 17.5
+        # Baseline ambient room temperature: ~21.5 C with natural optical-thermal gradient
+        temp_celsius = 21.0 + (blurred.astype(np.float32) / 255.0) * 1.8
 
-        # Detect warm skin/body tones if color is present
-        if rgb_frame.ndim == 3:
-            hsv = cv2.cvtColor(rgb_frame, cv2.COLOR_BGR2HSV)
-            # Skin tone hue range in HSV
-            skin_mask = cv2.inRange(hsv, (0, 30, 60), (25, 180, 255))
-            # Boost temperature for skin regions (body heat ~34C - 36.5C)
-            temp_celsius[skin_mask > 0] = np.clip(temp_celsius[skin_mask > 0] + 5.0, 32.0, 37.5)
-
-        # Add realistic thermal detector sensor noise (NETD ~ 50 mK = 0.05 C)
-        noise = np.random.normal(0.0, 0.08, (h, w))
+        # Add realistic thermal sensor noise (NETD ~ 50 mK)
+        noise = np.random.normal(0.0, 0.05, (h, w))
         temp_celsius += noise
 
         # Record spot temperatures
@@ -113,12 +104,15 @@ class LiveThermalAdapter(BaseSensor):
             if ret and frame is not None:
                 return frame
 
-        # Synthesized from live companion sensor
-        if self.companion_sensor is not None and hasattr(self.companion_sensor, "cap") and self.companion_sensor.cap is not None:
-            # Companion camera has latest frame
-            ret, rgb = self.companion_sensor.cap.read()
-            if ret and rgb is not None:
+        # Synthesized from live companion sensor's latest frame
+        if self.companion_sensor is not None:
+            rgb = getattr(self.companion_sensor, "last_captured_frame", None)
+            if rgb is not None:
                 return self._synthesize_radiometric_thermal(rgb)
+            if hasattr(self.companion_sensor, "cap") and self.companion_sensor.cap is not None:
+                ret, frame = self.companion_sensor.cap.read()
+                if ret and frame is not None:
+                    return self._synthesize_radiometric_thermal(frame)
 
         # Fallback synthetic frame with realistic ambient heat gradient
         blank_rgb = np.full((self.config.height, self.config.width, 3), 120, dtype=np.uint8)

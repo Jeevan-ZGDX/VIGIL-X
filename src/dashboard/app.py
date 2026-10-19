@@ -58,7 +58,10 @@ def get_pipeline() -> SafetyPipeline:
             cfg.rgb_sensor.device_index = 0
             cfg.thermal_sensor.mode = "live"
             cfg.thermal_sensor.device_index = 1
-            logger.info("Auto-detected live webcam on /dev/video0; configuring live real-time pipeline")
+            if Path("models/yolov5n.onnx").exists():
+                cfg.rgb_detector.backend = "onnx"
+                cfg.rgb_detector.model_path = "models/yolov5n.onnx"
+            logger.info("Auto-detected live webcam on /dev/video0; configuring live real-time pipeline with YOLOv5n ONNX")
         else:
             cfg.rgb_sensor.mode = "replay"
             cfg.rgb_sensor.replay_path = "data/synthetic/scenario_1_normal"
