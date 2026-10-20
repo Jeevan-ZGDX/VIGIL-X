@@ -12,10 +12,14 @@
       <div class="header-title">
         <h1>Pedestrian Safety Fusion System</h1>
         <p class="subtitle">Live Multimodal RGB + Thermal Infrared Edge Protection (ISO 3691-4 / ISO 13849)</p>
-      </div>
-      <div id="alert-banner" class="alert-banner normal">
-        <span class="alert-icon">●</span>
-        <span id="alert-text">NORMAL</span>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button id="btn-audio-toggle" class="btn" style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #38bdf8; background: #0f172a; color: #38bdf8;">
+          <span id="audio-icon">🔊</span> <span id="audio-label">BEEP ALARM: ARMED</span>
+        </button>
+        <div id="alert-banner" class="alert-banner normal">
+          <span class="alert-icon">●</span>
+          <span id="alert-text">NORMAL</span>
+        </div>
       </div>
     </header>
 
@@ -88,19 +92,20 @@
     <div class="dashboard-panels">
       <!-- Active Tracks Table -->
       <div class="panel">
-        <h3>Active Pedestrian Tracks</h3>
+        <h3>Active Path Targets & Intruder Tracks</h3>
         <table class="tracks-table">
           <thead>
             <tr>
               <th>ID</th>
+              <th>Class</th>
               <th>Distance</th>
               <th>Speed</th>
+              <th>IR Radiance</th>
               <th>Conf</th>
-              <th>Sensors</th>
             </tr>
           </thead>
           <tbody id="tracks-body">
-            <tr><td colspan="5" style="text-align:center; color:#888;">No active pedestrian tracks</td></tr>
+            <tr><td colspan="6" style="text-align:center; color:#888;">No active targets detected</td></tr>
           </tbody>
         </table>
       </div>

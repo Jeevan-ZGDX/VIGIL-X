@@ -96,7 +96,13 @@ class MultiPedestrianTracker:
         # Step 3: Initialize new tentative tracks for unmatched detections
         for d_idx, det in enumerate(detections):
             if d_idx not in matched_detections:
-                track_id = f"PED_{self._next_id:03d}"
+                prefix = (
+                    "PED" if det.class_name == "pedestrian"
+                    else "HOLE" if det.class_name == "pothole"
+                    else "PAPER" if det.class_name == "paper"
+                    else "OBS"
+                )
+                track_id = f"{prefix}_{self._next_id:03d}"
                 self._next_id += 1
                 new_track = PedestrianTrack(track_id=track_id, initial_detection=det)
                 if self.config.min_hits_to_confirm <= 1:

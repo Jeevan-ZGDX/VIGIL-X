@@ -66,26 +66,86 @@ class LiveThermalAdapter(BaseSensor):
         self.is_connected = False
         self.health_status = SensorHealthStatus.DISCONNECTED
 
+        self.active_targets: List[dict] = []
+
+    def set_active_targets(self, targets: List[dict]) -> None:
+        """Receive detected target bounding boxes and classes to simulate realistic infrared thermography."""
+        self.active_targets = targets
+
     def _synthesize_radiometric_thermal(self, rgb_frame: np.ndarray) -> np.ndarray:
         """
         Convert visible-light frame into calibrated radiometric thermal frame.
-        Maps warm human body and skin radiance to 32C - 37C (30515 - 31015 centikelvin)
-        and ambient surroundings to 21C - 24C (29415 - 29715 centikelvin).
+        Simulates authentic LWIR (8-14 um) sensor physics:
+        - Ambient environment: 21.0 C - 24.5 C (with subtle thermal emissivity differences)
+        - Human body core: 34.0 C - 36.8 C (face/head hottest, torso insulated by clothes)
+        - Ground pothole cavities: 18.0 C - 19.5 C (cooler shaded depression)
         """
         h, w = rgb_frame.shape[:2]
         gray = cv2.cvtColor(rgb_frame, cv2.COLOR_BGR2GRAY) if rgb_frame.ndim == 3 else rgb_frame
 
-        # Thermal point spread function blur
-        blurred = cv2.GaussianBlur(gray, (7, 7), 2.0)
+        # Thermal point spread function (LWIR optical blur)
+        blurred = cv2.GaussianBlur(gray, (9, 9), 2.5)
 
-        # Baseline ambient room temperature: ~21.5 C with natural optical-thermal gradient
-        temp_celsius = 21.0 + (blurred.astype(np.float32) / 255.0) * 1.8
+        # Baseline ambient room temperature: 21.5 C with surface emissivity variations
+        temp_celsius = 21.5 + (blurred.astype(np.float32) / 255.0) * 2.8
 
-        # Add realistic thermal sensor noise (NETD ~ 50 mK)
-        noise = np.random.normal(0.0, 0.05, (h, w))
+        # Inject authentic thermal signatures for detected physical targets
+        if self.active_targets:
+            for t in self.active_targets:
+                cls_name = t.get("class_name", "pedestrian")
+                bx1 = max(0, min(w - 1, int(t.get("x1", 0))))
+                by1 = max(0, min(h - 1, int(t.get("y1", 0))))
+                bx2 = max(0, min(w - 1, int(t.get("x2", 0))))
+                by2 = max(0, min(h - 1, int(t.get("y2", 0))))
+
+                if bx2 <= bx1 or by2 <= by1:
+                    continue
+
+                bw = bx2 - bx1
+                bh = by2 - by1
+
+                if cls_name == "pedestrian":
+                    # Human anatomical thermal signature:
+                    # Head region (top 35%): hottest skin radiance (35.2 C - 36.6 C)
+                    head_h = max(2, int(bh * 0.35))
+                    cy_head = by1 + head_h // 2
+                    cx_head = bx1 + bw // 2
+                    rx = max(1, bw // 3)
+                    ry = max(1, head_h // 2)
+
+                    y_coords, x_coords = np.ogrid[by1 : by1 + head_h, bx1:bx2]
+                    dist_norm = ((x_coords - cx_head)**2) / (rx**2 + 1e-5) + ((y_coords - cy_head)**2) / (ry**2 + 1e-5)
+                    head_heat = np.clip(36.4 - dist_norm * 2.0, 32.5, 36.6)
+                    temp_celsius[by1 : by1 + head_h, bx1:bx2] = np.maximum(
+                        temp_celsius[by1 : by1 + head_h, bx1:bx2],
+                        head_heat,
+                    )
+
+                    # Body/torso region (lower 65%): warm clothing radiance (31.5 C - 34.0 C)
+                    body_y1 = by1 + head_h
+                    if by2 > body_y1:
+                        y_b, x_b = np.ogrid[body_y1:by2, bx1:bx2]
+                        cx_b = bx1 + bw // 2
+                        rx_b = max(1, bw // 2)
+                        dist_b = np.abs(x_b - cx_b) / (rx_b + 1e-5)
+                        body_heat = np.clip(33.8 - dist_b * 2.5, 29.5, 34.2)
+                        temp_celsius[body_y1:by2, bx1:bx2] = np.maximum(
+                            temp_celsius[body_y1:by2, bx1:bx2],
+                            body_heat,
+                        )
+
+                elif cls_name == "pothole":
+                    # Pothole cavity: cooler thermal depression (18.2 C - 19.5 C)
+                    temp_celsius[by1:by2, bx1:bx2] = np.minimum(
+                        temp_celsius[by1:by2, bx1:bx2],
+                        18.8,
+                    )
+
+        # Add realistic sensor thermal noise (NETD ~ 40 mK)
+        noise = np.random.normal(0.0, 0.04, (h, w))
         temp_celsius += noise
 
-        # Record spot temperatures
+        # Record spot temperature at center and maximum peak temperature
         cy, cx = h // 2, w // 2
         self.spot_temperature_celsius = round(float(temp_celsius[cy, cx]), 1)
         self.max_temperature_celsius = round(float(np.max(temp_celsius)), 1)

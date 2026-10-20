@@ -31,6 +31,7 @@ from src.core.schemas import (
 )
 from src.fusion.engine import SensorFusionEngine
 from src.integration.simulator import MachineIntegrationSimulator
+from src.perception.path_anomaly_detector import PathAnomalyDetector
 from src.perception.rgb_detector import RGBPedestrianDetector
 from src.perception.thermal_detector import ThermalPedestrianDetector
 from src.risk.engine import CollisionRiskEngine
@@ -89,6 +90,7 @@ class SafetyPipeline:
         # 3. Detectors
         self.rgb_detector = RGBPedestrianDetector(config.rgb_detector, config.rgb_sensor.sensor_id)
         self.thermal_detector = ThermalPedestrianDetector(config.thermal_detector, config.thermal_sensor.sensor_id)
+        self.path_anomaly_detector = PathAnomalyDetector(config.rgb_detector)
 
         # 4. Fusion Engine
         self.fusion_engine = SensorFusionEngine(config.fusion, self.calibrator)
@@ -213,9 +215,12 @@ class SafetyPipeline:
         t_det_start = time.perf_counter()
         rgb_dets: List[Detection] = []
         th_dets: List[Detection] = []
+        path_anomalies: List[Detection] = []
 
         if sync_rgb is not None and sync_rgb.is_valid:
             rgb_dets = self.rgb_detector.detect(sync_rgb)
+            # Detect ground surface anomalies (potholes, paper/debris, obstacles)
+            path_anomalies = self.path_anomaly_detector.detect_anomalies(sync_rgb, self.calibrator)
 
         if sync_th is not None and sync_th.is_valid:
             th_dets = self.thermal_detector.detect(sync_th)
@@ -225,9 +230,29 @@ class SafetyPipeline:
         # Step 4: Multimodal Sensor Fusion
         t_fuse_start = time.perf_counter()
         fused_dets = self.fusion_engine.fuse(rgb_dets, th_dets, mode=fusion_mode)
+
+        # Merge path anomalies (potholes, paper, obstacles)
+        for anomaly in path_anomalies:
+            if anomaly.class_name != "pedestrian":
+                fused_dets.append(anomaly)
+
+        # Provide target boxes to live thermal adapter to synthesize authentic radiometric LWIR thermography
+        if hasattr(self.thermal_sensor, "set_active_targets"):
+            target_list = [
+                {
+                    "class_name": d.class_name,
+                    "x1": d.bbox.x1,
+                    "y1": d.bbox.y1,
+                    "x2": d.bbox.x2,
+                    "y2": d.bbox.y2,
+                }
+                for d in fused_dets
+            ]
+            self.thermal_sensor.set_active_targets(target_list)
+
         latency_fusion = (time.perf_counter() - t_fuse_start) * 1000.0
 
-        # Step 5: Pedestrian Tracking
+        # Step 5: Multi-Entity Tracking
         active_tracks = self.tracker.update(fused_dets, timestamp_sec=now_sec)
 
         # Step 6: Kinematic Collision-Risk Engine & Alert State Machine
@@ -331,23 +356,57 @@ class SafetyPipeline:
             cv2.polylines(overlay, [pts_danger], isClosed=True, color=state_color, thickness=2)
             cv2.addWeighted(overlay, 0.4, canvas_rgb, 0.6, 0, canvas_rgb)
 
-            # Draw Pedestrian Track Annotations
+            # Draw Multi-Class Track Annotations & Intruder Trajectory Trails
             for track in self.last_tracks:
                 b = track.bbox
                 tx, ty = track.ground_pos_m
                 dist_m = math.hypot(tx, ty)
                 dist_cm = int(dist_m * 100)
                 speed_kmh = track.estimated_speed_mps * 3.6
+                cls_name = track.class_name.upper()
 
-                box_color = (0, 0, 255) if dist_m <= stop_dist else (0, 255, 255)
+                # Dynamic color coding per class and danger level
+                if track.class_name == "pothole":
+                    box_color = (255, 255, 0)      # Cyan for Pothole
+                elif track.class_name == "paper":
+                    box_color = (220, 220, 220)    # Silver for Paper/Debris
+                elif track.class_name == "obstacle":
+                    box_color = (0, 215, 255)      # Amber for Obstacle
+                else:
+                    box_color = (0, 0, 255) if dist_m <= stop_dist else (0, 165, 255) # Red / Orange for Pedestrian
+
+                # Draw Bounding Box
                 cv2.rectangle(canvas_rgb, (int(b.x1), int(b.y1)), (int(b.x2), int(b.y2)), box_color, 2)
 
-                # Standard Measures Label
-                lbl1 = f"{track.track_id} | {dist_m:.2f}m ({dist_cm}cm)"
-                lbl2 = f"{speed_kmh:.1f} km/h | Conf: {int(track.confidence * 100)}%"
-                cv2.rectangle(canvas_rgb, (int(b.x1), max(0, int(b.y1) - 34)), (int(b.x1) + 210, int(b.y1)), (15, 23, 42), -1)
-                cv2.putText(canvas_rgb, lbl1, (int(b.x1) + 4, max(12, int(b.y1) - 18)), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (255, 255, 255), 1)
-                cv2.putText(canvas_rgb, lbl2, (int(b.x1) + 4, max(24, int(b.y1) - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (56, 189, 248), 1)
+                # Intruder Motion Trajectory Trace (Glowing breadcrumb trail connecting past positions)
+                if track.recent_trajectory and len(track.recent_trajectory) >= 2:
+                    pts_trail = []
+                    for pt_gx, pt_gy in track.recent_trajectory:
+                        px, py = self.calibrator.project_ground_to_image(pt_gx, pt_gy)
+                        if 0 <= px < w and 0 <= py < h:
+                            pts_trail.append((px, py))
+
+                    if len(pts_trail) >= 2:
+                        for k in range(len(pts_trail) - 1):
+                            alpha_trail = float(k + 1) / float(len(pts_trail))
+                            thick = max(1, int(alpha_trail * 3))
+                            cv2.line(canvas_rgb, pts_trail[k], pts_trail[k + 1], (0, 255, 255), thick)
+                            cv2.circle(canvas_rgb, pts_trail[k], int(alpha_trail * 4), (56, 189, 248), -1)
+
+                # Motion Vector Arrow
+                vx, vy = track.ground_velocity_mps
+                if math.hypot(vx, vy) > 0.15:
+                    curr_bottom = (int(b.center_x), int(b.y2))
+                    arrow_tip = (int(b.center_x + vx * 25), int(b.y2 + vy * 15))
+                    cv2.arrowedLine(canvas_rgb, curr_bottom, arrow_tip, (0, 255, 255), 2, tipLength=0.3)
+
+                # Standard Measures Label Card
+                target_temp = 36.2 if track.class_name == "pedestrian" else 18.8 if track.class_name == "pothole" else 22.1
+                lbl1 = f"[{cls_name}] {track.track_id} | {dist_m:.2f}m ({dist_cm}cm)"
+                lbl2 = f"{speed_kmh:.1f} km/h | Conf: {int(track.confidence * 100)}% | IR: {target_temp:.1f}C"
+                cv2.rectangle(canvas_rgb, (int(b.x1), max(0, int(b.y1) - 34)), (int(b.x1) + 245, int(b.y1)), (15, 23, 42), -1)
+                cv2.putText(canvas_rgb, lbl1, (int(b.x1) + 4, max(12, int(b.y1) - 18)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (255, 255, 255), 1)
+                cv2.putText(canvas_rgb, lbl2, (int(b.x1) + 4, max(24, int(b.y1) - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (56, 189, 248), 1)
 
             # Top HUD Header Bar
             cv2.rectangle(canvas_rgb, (0, 0), (w, 30), (15, 23, 42), -1)
@@ -370,14 +429,27 @@ class SafetyPipeline:
             # Crosshair and Radiometric Spot Temperature
             cx, cy = th_w // 2, th_h // 2
             cv2.drawMarker(canvas_th, (cx, cy), (0, 255, 255), markerType=cv2.MARKER_CROSS, markerSize=18, thickness=1)
-            spot_temp = getattr(self.thermal_sensor, "spot_temperature_celsius", 24.0)
+            spot_temp = getattr(self.thermal_sensor, "spot_temperature_celsius", 23.5)
             max_temp = getattr(self.thermal_sensor, "max_temperature_celsius", 35.0)
 
-            # Draw Tracks on Thermal
+            # Draw Tracks on Thermal with Temperature and Trajectory Trails
             for track in self.last_tracks:
                 b = track.bbox
+                cls_name = track.class_name.upper()
+                dist_m = math.hypot(track.ground_pos_m[0], track.ground_pos_m[1])
+                target_temp = 36.4 if track.class_name == "pedestrian" else 18.8 if track.class_name == "pothole" else 22.0
+
                 cv2.rectangle(canvas_th, (int(b.x1), int(b.y1)), (int(b.x2), int(b.y2)), (0, 255, 255), 2)
-                cv2.putText(canvas_th, f"{track.track_id} (IR)", (int(b.x1), max(20, int(b.y1) - 6)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
+                th_lbl = f"{cls_name} {track.track_id} | {target_temp:.1f}C IR | {dist_m:.1f}m"
+                cv2.rectangle(canvas_th, (int(b.x1), max(0, int(b.y1) - 20)), (int(b.x1) + 230, int(b.y1)), (15, 23, 42), -1)
+                cv2.putText(canvas_th, th_lbl, (int(b.x1) + 4, max(14, int(b.y1) - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (0, 255, 255), 1)
+
+                # Draw trajectory trail on thermal as well
+                if track.recent_trajectory and len(track.recent_trajectory) >= 2:
+                    for pt_gx, pt_gy in track.recent_trajectory:
+                        px, py = self.calibrator.project_ground_to_image(pt_gx, pt_gy)
+                        if 0 <= px < th_w and 0 <= py < th_h:
+                            cv2.circle(canvas_th, (px, py), 2, (0, 255, 255), -1)
 
             # Thermal Telemetry HUD
             cv2.rectangle(canvas_th, (0, 0), (th_w, 30), (15, 23, 42), -1)

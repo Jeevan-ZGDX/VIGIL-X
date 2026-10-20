@@ -93,3 +93,17 @@ class SpatialCalibrator:
         """
         u, v = bbox.bottom_center
         return self.project_image_to_ground(u, v)
+
+    def project_ground_to_image(self, x_m: float, y_m: float) -> Tuple[int, int]:
+        """
+        Forward perspective projection mapping ground coordinate (x_m, y_m) to image pixel (u, v).
+        """
+        y_safe = max(0.2, float(y_m))
+        total_pitch = math.atan2(self.camera_height_m, y_safe)
+        angle_from_axis = total_pitch - self.camera_pitch_rad
+        delta_v = self.focal_length_px * math.tan(angle_from_axis)
+        v = int(self.principal_y + delta_v)
+
+        delta_u = (float(x_m) * self.focal_length_px) / y_safe
+        u = int(self.principal_x + delta_u)
+        return (u, v)

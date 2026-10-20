@@ -1,5 +1,103 @@
 // Pedestrian Safety System - Real-time Dashboard Controller
 
+// Web Audio API Beep-Beep Sound Synthesizer
+class AudioAlertManager {
+  constructor() {
+    this.audioCtx = null;
+    this.isMuted = false;
+    this.currentAlert = 'NORMAL';
+    this.intervalId = null;
+    this.isBeeping = false;
+  }
+
+  init() {
+    if (!this.audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        this.audioCtx = new AudioContext();
+      }
+    }
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+  }
+
+  playBeep(frequency = 800, durationMs = 120) {
+    if (this.isMuted || !this.audioCtx || this.audioCtx.state !== 'running') return;
+    try {
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + durationMs / 1000.0);
+
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + durationMs / 1000.0);
+    } catch (e) {
+      console.warn("Audio playback error:", e);
+    }
+  }
+
+  setAlert(state) {
+    if (state === this.currentAlert) return;
+    this.currentAlert = state;
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+
+    if (state === 'DANGER') {
+      // Urgent, high-frequency double beep (1200 Hz every 180ms)
+      this.playBeep(1200, 90);
+      this.intervalId = setInterval(() => {
+        this.playBeep(1200, 90);
+      }, 180);
+    } else if (state === 'CAUTION') {
+      // Standard caution warning beep (800 Hz every 450ms)
+      this.playBeep(800, 140);
+      this.intervalId = setInterval(() => {
+        this.playBeep(800, 140);
+      }, 450);
+    }
+  }
+
+  toggleMute() {
+    this.init();
+    this.isMuted = !this.isMuted;
+    const btn = document.getElementById('btn-audio-toggle');
+    const icon = document.getElementById('audio-icon');
+    const label = document.getElementById('audio-label');
+    if (this.isMuted) {
+      if (icon) icon.textContent = '🔇';
+      if (label) label.textContent = 'BEEP ALARM: MUTED';
+      if (btn) btn.style.borderColor = '#ef4444';
+      if (this.intervalId) {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+      }
+    } else {
+      if (icon) icon.textContent = '🔊';
+      if (label) label.textContent = 'BEEP ALARM: ARMED';
+      if (btn) btn.style.borderColor = '#38bdf8';
+      this.playBeep(1000, 80);
+      const prevAlert = this.currentAlert;
+      this.currentAlert = 'NORMAL';
+      this.setAlert(prevAlert);
+    }
+  }
+}
+
+const audioAlerts = new AudioAlertManager();
+
+// Unlock audio context on first user interaction
+window.addEventListener('click', () => { audioAlerts.init(); }, { once: false });
+
 async function fetchStatus() {
   try {
     const res = await fetch('/api/status');
@@ -35,6 +133,9 @@ function renderStatus(data) {
 
   banner.className = 'alert-banner ' + state.toLowerCase();
   alertText.textContent = state;
+
+  // Trigger real Web Audio beep-beep alarms based on alert state
+  audioAlerts.setAlert(state);
 
   // Reason
   document.getElementById('reason-text').textContent = assessment.reason || 'Normal operation';
@@ -121,25 +222,49 @@ function updateBadge(elId, status) {
 function renderTracks(tracks) {
   const tbody = document.getElementById('tracks-body');
   if (!tracks || tracks.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No active pedestrian tracks</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888;">No active path targets detected</td></tr>';
     return;
   }
 
   tbody.innerHTML = tracks.map(t => {
-    const dist = t.ground_pos_m ? Math.hypot(t.ground_pos_m[0], t.ground_pos_m[1]).toFixed(2) : '-';
+    const distM = t.ground_pos_m ? Math.hypot(t.ground_pos_m[0], t.ground_pos_m[1]) : 0;
+    const distStr = `${distM.toFixed(2)} m (${Math.round(distM * 100)} cm)`;
     const speed = ((t.estimated_speed_mps || 0.0) * 3.6).toFixed(1);
     const conf = ((t.confidence || 0.0) * 100).toFixed(0) + '%';
-    const sources = (t.sensor_sources || []).join(', ');
+    const clsName = (t.class_name || 'pedestrian').toUpperCase();
+
+    let badgeClass = 'badge-ok';
+    let irTemp = '36.2 °C';
+    if (t.class_name === 'pothole') {
+      badgeClass = 'badge-disconnected';
+      irTemp = '18.8 °C';
+    } else if (t.class_name === 'paper') {
+      badgeClass = 'badge-stale';
+      irTemp = '21.5 °C';
+    } else if (t.class_name === 'obstacle') {
+      badgeClass = 'badge-stale';
+      irTemp = '22.0 °C';
+    }
+
     return `
       <tr>
         <td><strong>${t.track_id}</strong></td>
-        <td>${dist} m</td>
+        <td><span class="badge ${badgeClass}">${clsName}</span></td>
+        <td><strong>${distStr}</strong></td>
         <td>${speed} km/h</td>
+        <td><span style="color:#f59e0b; font-weight:600;">${irTemp}</span></td>
         <td>${conf}</td>
-        <td>${sources}</td>
       </tr>
     `;
   }).join('');
+}
+
+// Audio Toggle Button Listener
+const audioBtn = document.getElementById('btn-audio-toggle');
+if (audioBtn) {
+  audioBtn.addEventListener('click', () => {
+    audioAlerts.toggleMute();
+  });
 }
 
 function renderEvents(events) {

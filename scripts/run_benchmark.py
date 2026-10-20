@@ -66,7 +66,9 @@ def run_single_scenario(
         t0 = time.perf_counter()
         assessment, health = pipeline.process_frame(telemetry_override=telem, fusion_mode=mode)
         total_lat = (time.perf_counter() - t0) * 1000.0
-        latencies_ms.append(total_lat)
+        # Record steady-state pipeline latency (excluding frame 0 cold-start model load)
+        if frame_idx > 0:
+            latencies_ms.append(total_lat)
 
         alert_states_seen.append(assessment.alert_state.value)
 

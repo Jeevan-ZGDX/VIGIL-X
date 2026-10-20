@@ -111,11 +111,13 @@ class CollisionRiskEngine:
 
             # --- Evaluate state priorities ---
 
+            cls_title = track.class_name.capitalize()
+
             # Priority 1: DANGER Conditions
             if zone == SafetyZoneType.DANGER_ZONE:
                 highest_state = AlertState.DANGER
                 primary_reason = (
-                    f"Pedestrian {track.track_id} in DANGER_ZONE (distance: {dist:.1f}m, "
+                    f"{cls_title} {track.track_id} in DANGER_ZONE (distance: {dist:.1f}m, "
                     f"speed: {track.estimated_speed_mps:.1f}m/s)"
                 )
                 critical_zone = zone
@@ -125,7 +127,7 @@ class CollisionRiskEngine:
             if ttc_sec is not None and ttc_sec <= self.zone_cfg.time_to_collision_danger_sec and abs(tx) <= half_w + 1.0:
                 highest_state = AlertState.DANGER
                 primary_reason = (
-                    f"Imminent collision: Pedestrian {track.track_id} TTC={ttc_sec:.1f}s "
+                    f"Imminent collision: {cls_title} {track.track_id} TTC={ttc_sec:.1f}s "
                     f"(distance: {dist:.1f}m, closing velocity: {v_closing:.1f}m/s)"
                 )
                 critical_zone = SafetyZoneType.DANGER_ZONE
@@ -135,7 +137,7 @@ class CollisionRiskEngine:
             # Reverse conflict
             if telemetry.gear == "REVERSE" and ty < 0 and abs(ty) <= self.zone_cfg.blind_spot_rear_m:
                 highest_state = AlertState.DANGER
-                primary_reason = f"Rear collision risk: Pedestrian {track.track_id} behind reversing machine ({abs(ty):.1f}m)"
+                primary_reason = f"Rear collision risk: {cls_title} {track.track_id} behind reversing machine ({abs(ty):.1f}m)"
                 critical_zone = SafetyZoneType.BLIND_SPOT_ZONE
                 critical_track_id = track.track_id
                 break
@@ -145,7 +147,7 @@ class CollisionRiskEngine:
                 if zone == SafetyZoneType.WARNING_ZONE:
                     highest_state = AlertState.CAUTION
                     primary_reason = (
-                        f"Pedestrian {track.track_id} in WARNING_ZONE (distance: {dist:.1f}m)"
+                        f"{cls_title} {track.track_id} in WARNING_ZONE (distance: {dist:.1f}m)"
                     )
                     critical_zone = zone
                     critical_track_id = track.track_id
@@ -153,7 +155,7 @@ class CollisionRiskEngine:
                 elif zone == SafetyZoneType.BLIND_SPOT_ZONE:
                     highest_state = AlertState.CAUTION
                     primary_reason = (
-                        f"Pedestrian {track.track_id} in BLIND_SPOT_ZONE (distance: {dist:.1f}m)"
+                        f"{cls_title} {track.track_id} in BLIND_SPOT_ZONE (distance: {dist:.1f}m)"
                     )
                     critical_zone = zone
                     critical_track_id = track.track_id
@@ -161,7 +163,7 @@ class CollisionRiskEngine:
                 elif ttc_sec is not None and ttc_sec <= self.zone_cfg.time_to_collision_caution_sec:
                     highest_state = AlertState.CAUTION
                     primary_reason = (
-                        f"Potential conflict: Pedestrian {track.track_id} TTC={ttc_sec:.1f}s (closing speed {v_closing:.1f}m/s)"
+                        f"Potential conflict: {cls_title} {track.track_id} TTC={ttc_sec:.1f}s (closing speed {v_closing:.1f}m/s)"
                     )
                     critical_zone = SafetyZoneType.WARNING_ZONE
                     critical_track_id = track.track_id
@@ -169,7 +171,7 @@ class CollisionRiskEngine:
                 elif is_crossing_conflict:
                     highest_state = AlertState.CAUTION
                     primary_reason = (
-                        f"Crossing trajectory conflict: Pedestrian {track.track_id} moving across machine travel corridor"
+                        f"Crossing trajectory conflict: {cls_title} {track.track_id} moving across machine travel corridor"
                     )
                     critical_zone = SafetyZoneType.WARNING_ZONE
                     critical_track_id = track.track_id

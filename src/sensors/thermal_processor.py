@@ -60,9 +60,14 @@ class ThermalProcessor:
             max_val = float(np.max(gray))
             # Check if radiometric centikelvin (values > 10000, e.g. 29415 = 21 C)
             if min_val > 10000:
-                # Calibrated industrial safety range: 15.0 C (28815 cK) to 42.0 C (31515 cK)
-                calib_min = 28815.0
-                calib_max = 31515.0
+                # Dynamic auto-ranging with calibrated floor:
+                if max_val > 30115:  # Target > 28 C (human or hot object)
+                    calib_min = min(min_val, 29215.0)  # ~19 C
+                    calib_max = max(max_val, 31015.0)  # ~37 C
+                else:
+                    # Ambient scene: map ambient range with natural contrast
+                    calib_min = min_val - 20.0
+                    calib_max = max(calib_min + 300.0, max_val + 20.0)
                 norm = ((gray.astype(np.float32) - calib_min) / (calib_max - calib_min) * 255.0).clip(0, 255)
                 gray_8u = norm.astype(np.uint8)
             else:
