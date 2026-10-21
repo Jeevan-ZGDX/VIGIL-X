@@ -1,6 +1,6 @@
-# Multipurpose AI-Based Pedestrian Safety System (RGB & Thermal Sensor Fusion)
+# Multipurpose AI-Based Pedestrian & Path Anomaly Safety System (RGB & Thermal Sensor Fusion)
 
-A production-oriented, edge-deployable pedestrian safety system combining visible-light (RGB) optical cameras and thermal infrared sensors to detect workers near industrial equipment (forklifts, reach trucks, cranes, excavators), calculate kinematic collision risks, and issue timely, prioritized warnings.
+A production-oriented, edge-deployable industrial safety system combining visible-light (RGB) optical cameras and thermal infrared sensors to detect workers and ground path anomalies (potholes, debris/paper, obstacles) near moving industrial equipment (forklifts, reach trucks, cranes, excavators), calculate kinematic collision risks, track intruder movement trajectories, and issue prioritized visual and acoustic warnings (pulsed beep-beep alarm).
 
 ---
 
@@ -9,8 +9,8 @@ A production-oriented, edge-deployable pedestrian safety system combining visibl
 ```mermaid
 flowchart TD
     subgraph Sensors["Sensor Abstraction Layer"]
-        RGB_IN["RGB Camera / Stream\n(V4L2 / UVC / Replay)"]
-        TH_IN["Thermal Infrared Camera\n(Radiometric / 8-bit / Replay)"]
+        RGB_IN["RGB Camera / Stream\n(V4L2 / UVC / Live / Replay)"]
+        TH_IN["Thermal Infrared Camera\n(Radiometric / 8-bit / Temp Matrix / Replay)"]
     end
 
     subgraph SyncCalib["Synchronization & Calibration"]
@@ -19,24 +19,25 @@ flowchart TD
     end
 
     subgraph Perception["Independent Perception Layer"]
-        DET_RGB["RGB Pedestrian Detector\n(Gradient-Silhouette / ONNX)"]
-        DET_TH["Thermal Pedestrian Detector\n(Heat Signature Contrast / Aspect Ratio)"]
+        DET_RGB["RGB Perception Engine\n(Pedestrians + Path Anomalies: Pothole, Paper, Crate)"]
+        DET_TH["Thermal Vision Engine\n(Radiometric Heat Contrast & Morphology, not color)"]
     end
 
     subgraph FusionLayer["Multimodal Fusion & Tracking"]
         FUSION["Detection-Level Fusion Engine\n(Geometric IoU, Uncertainty Model)"]
-        TRACK["Multi-Pedestrian Tracker\n(State: Tentative -> Confirmed, Coasting, Velocity)"]
+        TRACK["Multi-Object Kinematic Tracker\n(State: Tentative -> Confirmed, Motion Vector Trails)"]
     end
 
     subgraph SafetyEngine["Collision-Risk & Warning Engine"]
         ZONE["Safety Zone Manager\n(Danger Zone: 0-3.5m | Caution Zone: 3.5-8m | Blind-Spots)"]
-        TTC["Kinematic Risk Calculator\n(Time-to-Collision, Trajectory Crossing)"]
+        TTC["Kinematic Risk Calculator\n(Time-to-Collision, Trajectory Conflict)"]
         FSM["Alert State Machine\n(NORMAL | CAUTION | DANGER | DEGRADED)"]
     end
 
-    subgraph Integration["Integration & Dashboard"]
-        ADAPTER["Machine Integration Simulator\n(Strobe, Siren, Cabin Display, Advisory Slowdown)"]
-        DASHBOARD["FastAPI Operator Dashboard\n(Dual Video Feeds, Live Telemetry, Audit Logs)"]
+    subgraph Integration["Integration, UI & Audio Enunciation"]
+        ADAPTER["Machine Integration Simulator\n(Strobe, Siren, Advisory Slowdown, CAN Bus)"]
+        AUDIO["Acoustic Enunciator\n(Web Audio API Pulsed Beep-Beep Alarm on Pedestrian Proximity)"]
+        DASHBOARD["FastAPI Operator Dashboard\n(Dual Video Feeds, Motion Trails, Telemetry, Audit Logs)"]
         STORAGE["Structured Event Logger\n(JSONL Audit Trail with Privacy Protection)"]
     end
 
@@ -52,6 +53,7 @@ flowchart TD
     ZONE --> TTC
     TTC --> FSM
     FSM --> ADAPTER
+    FSM --> AUDIO
     FSM --> DASHBOARD
     FSM --> STORAGE
 ```
@@ -61,6 +63,12 @@ flowchart TD
 ## 2. Key Features
 
 - **Hardware-Agnostic Sensor Ingestion**: Supports live V4L2/UVC optical cameras, radiometric 16-bit or 8-bit thermal cameras, and high-fidelity video/frame replay adapters.
+- **Radiometric Thermal Sensing (True Heat Vision)**: Uses thermal infrared temperature differential and morphology analysis rather than RGB color classification, allowing robust operation in total darkness, glare, and steam.
+- **Multimodal Pedestrian & Path Anomaly Classification**:
+  - **Pedestrians**: Accurately localized, tracked with motion vectors, and triggers acoustic pulsed alarms.
+  - **Ground Path Anomalies**: Classifies obstacles and road hazards in the equipment trajectory (e.g., `pothole`, `paper_debris`, `pallet_crate`, `oil_hazard`).
+- **Dynamic Intruder Motion Tracking**: Preserves persistent IDs across frames with ground-plane velocity estimation and visual historical trajectory vector trails.
+- **Acoustic Warning Enunciation (Beep-Beep Sounds)**: Synthesizes immediate audible pulsed alert beeps when pedestrians enter Caution or Danger zones.
 - **Dynamic Temporal Alignment**: Tracks timestamp skew between sensors. Immediately flags out-of-sync or stale frames exceeding 50ms tolerance.
 - **Inverse Perspective Mapping (IPM)**: Projects image-space bounding box contact points into 2D physical ground coordinates `(X, Y)` in meters, computing accurate velocities without guessing image-pixel speeds.
 - **Uncertainty-Aware Fusion Engine**:
@@ -76,8 +84,9 @@ flowchart TD
   - Asymmetric hysteresis to prevent alert flickering while escalating danger instantaneously.
 - **Industrial Machine Interface**:
   - Non-actuating safety contract: communicates with external machine CAN bus or cabin displays without overriding certified mechanical brakes directly.
-  - Simulates visual strobe, pulsed/continuous audible buzzers (800 Hz / 2500 Hz), cabin text enunciators, and advisory slowdown requests.
-- **FastAPI Web Dashboard**: Live dual-stream MJPEG visualization (annotated RGB + Inferno false-color thermal), real-time track telemetry, interactive fault injection, and JSONL audit logging.
+  - Simulates visual strobe, pulsed/continuous audible buzzers, cabin text enunciators, and advisory slowdown requests.
+- **FastAPI Web Dashboard**: Live dual-stream MJPEG visualization (annotated RGB + Inferno false-color thermal), motion vector trails, acoustic alerts, real-time track telemetry, interactive fault injection, and JSONL audit logging.
+- **Production Containerization & Air-Gapped Release**: Packaged with multi-stage Docker builds, `docker-compose.yml`, self-contained offline tarball, and automated `deploy.sh` installer.
 
 ---
 
@@ -113,6 +122,9 @@ All 8 scenarios were evaluated across 3 modes on identical frame samples: **FUSE
 
 ```
 pedestrian_safety/
+├── Dockerfile                         # Production multi-stage Docker build
+├── .dockerignore                      # Context optimization filters
+├── docker-compose.yml                 # Root container orchestration
 ├── pyproject.toml                     # Python packaging & build configuration
 ├── requirements.txt                   # Pinned core runtime requirements
 ├── README.md                          # Comprehensive documentation
@@ -127,6 +139,16 @@ pedestrian_safety/
 │       ├── scenario_6_sensor_fault.yaml
 │       ├── scenario_7_interference.yaml
 │       └── scenario_8_moving_conflict.yaml
+├── models/                            # Optimized ONNX vision models
+│   ├── mobilenetv2_pedestrian.onnx    # Edge-optimized pedestrian detector
+│   └── yolov8n.onnx                   # Path anomaly & obstacle detector
+├── release/                           # Production Release Supplies Distribution
+│   ├── README.md                      # Release & deployment handbook
+│   ├── docker-compose.yml             # Self-contained edge compose specification
+│   ├── deploy.sh                      # Executable one-click installer & validator
+│   ├── vigil-x.service                # Systemd service unit for edge autostart
+│   ├── checksums.sha256               # Cryptographic SHA-256 integrity checksums
+│   └── vigil-x-v1.0.0-image.tar.gz    # Offline compressed Docker image (338MB)
 ├── src/
 │   ├── core/
 │   │   ├── schemas.py                 # Pydantic v2 typed models
@@ -142,14 +164,14 @@ pedestrian_safety/
 │   │   └── spatial.py                 # Ground-plane inverse perspective mapping (IPM)
 │   ├── perception/
 │   │   ├── base.py                    # Base detector interface
-│   │   ├── rgb_detector.py            # RGB pedestrian detector (lighting-aware)
-│   │   └── thermal_detector.py        # Thermal heat contrast & morphology detector
+│   │   ├── rgb_detector.py            # RGB detector (pedestrians + path anomalies)
+│   │   └── thermal_detector.py        # Thermal radiometric heat contrast & morphology detector
 │   ├── fusion/
 │   │   ├── engine.py                  # Detection-level spatial-temporal fusion
 │   │   └── uncertainty.py             # Bayesian confidence & uncertainty propagation
 │   ├── tracking/
 │   │   ├── track.py                   # PedestrianTrack kinematics & velocity estimation
-│   │   └── tracker.py                 # Multi-object tracker with coasting & expiration
+│   │   └── tracker.py                 # Multi-object tracker with coasting & vector trails
 │   ├── risk/
 │   │   ├── zones.py                   # Warning, Danger, and Blind-Spot spatial boundaries
 │   │   ├── engine.py                  # Kinematic collision-risk & dynamic TTC calculator
@@ -162,7 +184,7 @@ pedestrian_safety/
 │   │   └── static/                    # Responsive industrial operator dashboard
 │   │       ├── index.html
 │   │       ├── style.css
-│   │       └── app.js
+│   │       └── app.js                 # Web Audio API pulsed beep-beep alarm & canvas
 │   ├── storage/
 │   │   └── event_logger.py            # Structured JSONL logging with privacy retention
 │   └── pipeline.py                    # End-to-end pipeline orchestrator
@@ -184,37 +206,84 @@ pedestrian_safety/
 
 ---
 
-## 6. Installation & Quickstart
+## 6. Deployment & Quickstart
 
-### Prerequisites
+### Method A: Docker Container (Recommended for Production & Edge)
+
+The application is pre-packaged and verified under Docker:
+
+```bash
+# Build and run using Docker Compose
+docker compose up -d
+
+# Check live logs
+docker compose logs -f
+
+# Verify container health
+curl -f http://localhost:8000/health
+```
+
+To run with host V4L2 USB camera devices attached (`/dev/video0`):
+```bash
+docker run -d \
+  --name vigil-x \
+  --restart unless-stopped \
+  --device /dev/video0:/dev/video0 \
+  -p 8000:8000 \
+  -v $(pwd)/data:/app/data \
+  vigil-x:v1.0.0
+```
+
+---
+
+### Method B: Standalone Release Supplies (Air-Gapped / Field Deployment)
+
+For edge devices or machines without internet access:
+```bash
+cd release
+
+# Automated deployment script (loads image tarball, verifies sha256, launches container)
+sudo ./deploy.sh
+
+# Or install as a permanent systemd service:
+sudo cp vigil-x.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now vigil-x.service
+```
+
+---
+
+### Method C: Local Python Environment (Development)
+
+#### Prerequisites
 - Linux OS (Ubuntu 22.04+, Debian, Arch Linux, or Raspberry Pi OS 64-bit)
-- Python 3.10+ (tested on Python 3.14.7)
+- Python 3.10+ (tested on Python 3.11 - 3.14)
 - OpenCV and build tools
 
-### 1. Set Up Virtual Environment
+#### 1. Set Up Virtual Environment
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Generate Evaluation Datasets
+#### 2. Generate Evaluation Datasets
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/generate_scenario_data.py
 ```
 
-### 3. Run Automated Tests
+#### 3. Run Automated Tests
 ```bash
 PYTHONPATH=. .venv/bin/pytest
 ```
 *Expected: 24 passed test cases covering all subsystems and scenarios.*
 
-### 4. Run Benchmark Suite
+#### 4. Run Benchmark Suite
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/run_benchmark.py
 ```
 
-### 5. Launch Operator Dashboard
+#### 5. Launch Operator Dashboard
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/run_system.py --mode dashboard --port 8000
 ```
@@ -222,9 +291,12 @@ Open **`http://localhost:8000`** in any web browser to view:
 - Live dual annotated RGB and Thermal feeds
 - Real-time Alert State Banner (`NORMAL`, `CAUTION`, `DANGER`, `DEGRADED`)
 - Active pedestrian distance and velocity telemetry
+- Dynamic intruder motion trails on both camera views
+- Acoustic pulsed beep-beep alarm on pedestrian intrusion
+- Detected path anomalies (e.g. `pothole`, `paper_debris`, `pallet_crate`)
 - Interactive speed controls and sensor fault-injection buttons.
 
-### 6. Run Headless on Industrial Equipment
+#### 6. Run Headless on Industrial Equipment
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/run_system.py --mode headless --config config/default_config.yaml
 ```
