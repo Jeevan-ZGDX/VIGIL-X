@@ -22,3 +22,8 @@ data/events.jsonl
 .DS_Store
 .idea/
 .vscode/
+
+# Release archives (offline docker tarballs > 100MB)
+*.tar
+*.tar.gz
+

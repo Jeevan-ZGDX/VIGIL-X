@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python virtual environment and caches
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Testing & Coverage
+.pytest_cache
+.coverage
+htmlcov
+tests
+
+# Logs and transient event databases
+data/events.jsonl
+*.log
+
+# OS & IDE
+.DS_Store
+.idea
+.vscode
+*.swp
+
+# Release archives
+release/*.tar.gz
+dist
+build
